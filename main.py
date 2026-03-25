@@ -102,5 +102,50 @@ if uploaded_file is not None:
     ax.set_ylabel(nome_parametro)
     st.pyplot(fig)
 
+    # =========================================================
+    # KRUSKAL-WALLIS + EFFECT SIZE
+    # =========================================================
+    st.header("Kruskal-Wallis")
+
+    bins = [0, 29, 39, 49, 59, 69, 120]
+    labels = ["<30", "30-39", "40-49", "50-59", "60-69", "70+"]
+    df["faixa_etaria"] = pd.cut(df["idade"], bins=bins, labels=labels)
+
+    df_kw = df.dropna(subset=["faixa_etaria", "desempenho"])
+
+    ordem = ["<30", "30-39", "40-49", "50-59", "60-69", "70+"]
+
+    grupos = [
+    df_kw.loc[df_kw["faixa_etaria"] == faixa, "desempenho"].values
+    for faixa in ordem
+    if len(df_kw.loc[df_kw["faixa_etaria"] == faixa]) > 0
+    ]
+
+    if len(grupos) >= 2:
+        H, p = kruskal(*grupos)
+
+        n = len(df_kw)
+        k = len(grupos)
+
+        epsilon2 = (H - k + 1) / (n - k)
+
+        st.write(f"H = {H:.4f}")
+        st.write(f"p = {p:.6f}")
+        st.write(f"Epsilon² = {epsilon2:.4f}")
+
+        # Interpretação
+        if epsilon2 < 0.01:
+            interpretacao = "efeito muito pequeno"
+        elif epsilon2 < 0.08:
+            interpretacao = "efeito pequeno"
+        elif epsilon2 < 0.26:
+            interpretacao = "efeito moderado"
+        else:
+            interpretacao = "efeito grande"
+    
+        st.info(f"Interpretação do efeito: {interpretacao}")
+    else:
+        st.warning("Grupos insuficientes para Kruskal-Wallis")
+
 else:
     st.info("Aguardando arquivo CSV")
